@@ -1,0 +1,40 @@
+1. - Required = Ini memastikan bahwa form harus diisi (tidak boleh kosong). Cara kerja nya Ketika data di kirimkan lewat API, akan diperiksa apakah datanya sudah diinputkan semua yang harus diisi. Ketika ada yang tidak diisi maka akan tampil error message kepada pengguna
+
+- String = Ini memastikan format nya yang benar yaitu string (teks). Cara kerja nya Ketika data di kirimkan lewat API, akan diperiksa apakah datanya sudah sesuai dengan syaratnya. Kalau tidak maka akan tampil error message kepada pengguna yaitu "Nama produk harus berupa teks"
+
+- Integer = Ini memastikan format nya yang benar yaitu berupa angka. Cara kerja nya Ketika data di kirimkan lewat API, akan diperiksa apakah datanya sudah sesuai dengan syaratnya. Kalau tidak maka akan tampil error message kepada pengguna yaitu "Quantity harus berupa bilangan bulat"
+
+- Numeric = Ini memastikan format nya yang benar yaitu berupa angka. Cara kerja nya Ketika data di kirimkan lewat API, akan diperiksa apakah datanya sudah sesuai dengan syaratnya. Kalau tidak maka akan tampil error message kepada pengguna yaitu "Harga harus berupa angka"
+
+- exists:brands,id = Memastikan kalau brand id yang dikirim itu ada di dalam table brands. Produk hanya bisa di tambahkan untuk brand yang sudah ada di database
+
+2. Mekanisme autentikasi pengguna dalam proyek online shop ini adalah proses untuk memastikan hanya pengguna yang terdaftar saja yang dapat mengaksese fitur fitur seperti create, show, detail, dan delete product. Disini menggunakan cara token-based authentication melalui API, seperti menggunakan Laravel Sanctum. Saat pengguna login, aplikasi memverifikasi email dan password mereka. Jika berhasil, Laravel Sanctum akan mengeluarkan token khusus yang bisa digunakan untuk mengakses data lain dengan aman. Token ini dipakai sebagai tanda autentikasi pengguna di setiap request ke server. Informasi yang akan disimpan terkait akun pengguna yaitu nama, e-mail, password dan token autentikasi. Untuk memastikan keamanan autentikasi yaitu ada Enkripsi Password, password akan di modifikasi dengan menambahkan Hash::make. Validasi Input Login, menggunakan validator untuk memverifikasi bahwa input yang di terima valid sesuai dengan syarat. Menggunakan Token unutk Akses API, setelah login berhasil maka akan menghasilkan token. 
+
+3. Pertama kita menentukan apa saja yang akan di sort, disini ada nama, brand dan id yang bisa di sort. Di dalam Product Controller lalu di Product Index beri kode untuk membuat sort dan search nya :
+public function index(Request $request)
+    {
+        $keyword = $request->get('keyword');  // Default to empty string if no keyword is provided
+        $brandName = $request->get('brand_name');
+
+        $query = Product::query();
+
+        if ($keyword) {
+            $query = $query->where('name', 'like', "%{$keyword}%");
+        }
+
+        if ($brandName) {
+            $query->join('brands', 'products.brand_id', '=', 'brands.id')
+            ->select('products.*', 'brands.name as brand_name')
+            ->where('brands.name', 'like', "%{$brandName}%");
+        }
+
+        $products = $query->orderBy('id')->paginate(10);
+
+        return response()->json($products);
+    }
+
+Setelah itu dicoba di postman dengan membuat API seperti ini dengan method yaitu GET
+- http://127.0.0.1:8000/api/products?brand_name=colorbox
+- http://127.0.0.1:8000/api/products?keyword=shirt
+
+Untuk memastikan bahwa semua operasi CRUD (Create, Read, Update, Delete) berjalan dengan lancar dan aman Menggunakan validasi data untuk mencegah data yang tidak valid. Menggunakan error handling menangani error dengan status yang sesuai seperti 400/404
